@@ -1,0 +1,57 @@
+// Prisma schema for Stock Management System
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id           Int        @id @default(autoincrement())
+  username     String     @unique
+  passwordHash String
+  role         String     @default("user") // "admin" or "user"
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  movements    Movement[]
+}
+
+model Product {
+  id          Int        @id @default(autoincrement())
+  name        String
+  sku         String     @unique
+  quantity    Int        @default(0)
+  unit        String     @default("pcs")
+  minQuantity Int        @default(0)
+  category    String?
+  location    String?
+  notes       String?
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  movements   Movement[]
+}
+
+model Movement {
+  id                 Int       @id @default(autoincrement())
+  productId          Int
+  product            Product   @relation(fields: [productId], references: [id])
+  productName        String    // Denormalized for display
+  userId             Int
+  user               User      @relation(fields: [userId], references: [id])
+  username           String    // Denormalized for display
+  operationType      String    // "add", "take", "adjust", "edit", "undo"
+  quantityChange     Int       @default(0)
+  oldQuantity        Int
+  newQuantity        Int
+  details            String?
+  originalMovementId Int?      // Reference to the original movement if this is an undo
+  originalMovement   Movement? @relation("UndoRelation", fields: [originalMovementId], references: [id])
+  undoMovements      Movement[] @relation("UndoRelation")
+  isUndone           Boolean   @default(false)
+  timestamp          DateTime  @default(now())
+}
